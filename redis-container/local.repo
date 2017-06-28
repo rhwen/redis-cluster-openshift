@@ -1,0 +1,5 @@
+[local]
+name=local
+baseurl=https://mirrors.aliyun.com/centos/7.3.1611/os/x86_64/
+gpgcheck=0
+enabled=1
