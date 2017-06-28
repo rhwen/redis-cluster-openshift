@@ -6,6 +6,7 @@ FROM registry.access.redhat.com/rhscl/redis-32-rhel7
 #  * /var/lib/redis/data - Datastore for Redis
 # Environment:
 #  * $REDIS_PASSWORD - Database password
+#  * $REDIS_PORT - Database server port
 #
 # Configration file copy to /etc/redis.conf, the parameters as below: 
 #    daemonize yes
