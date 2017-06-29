@@ -24,8 +24,8 @@ public class App {
 
 	public static void main(String[] args) {
 		Options options = new Options();
-		options.addOption("p", "The Redis Database Password");
-		options.addOption("l",
+		options.addOption("p", true, "The Redis Database Password");
+		options.addOption("l", true,
 				"The list of Redis Cluster Host and Port, example: 192.168.65.2:9001;192.168.65.2:9002;...");
 		CommandLineParser parser = new PosixParser();
 
