@@ -29,6 +29,9 @@ FROM registry.access.redhat.com/rhscl/redis-32-rhel7
 #   /usr/src/redis-3.2.4/src/redis-trib.rb create --replicas 1 192.168.65.2:9001 192.168.65.2:9002 192.168.65.2:9003 192.168.65.2:9004 192.168.65.2:9005 192.168.65.2:9006
 #
 
+EXPOSE 6379
+EXPOSE 16379
+
 ENV REDIS_PORT=6379
 
 USER root
@@ -49,9 +52,11 @@ RUN yum install -y net-tools iputils ruby rubygems && \
 
 COPY redis.conf /etc/redis.conf
 COPY run-redis /usr/bin/run-redis
-RUN chown -R redis.0 /etc/ && \
+
+RUN chown -R 777 /etc/ && \
     chown -R redis.0 /etc/redis.conf && \
-    chown -R redis.0 /usr/bin/run-redis
+    chown -R redis.0 /usr/bin/run-redis && \
+    yum clean all && rm -rf /etc/yum.repos.d/*
 
 
 USER 1001

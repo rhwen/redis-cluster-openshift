@@ -16,10 +16,9 @@ fi
 
 
 # Dynamic update redis port
-if [ "${REDIS_PORT}" -ne "6379" ]; then
-  sed -i "s/6379/${REDIS_PORT}/g" /etc/redis.conf
-fi
-
+echo "port ${REDIS_PORT}" >> /etc/redis.conf
+echo "pidfile /var/opt/rh/rh-redis32/run/redis_${REDIS_PORT}.pid" >> /etc/redis.conf
+echo "cluster-config-file nodes-${REDIS_PORT}.conf" >> /etc/redis.conf
 
 # Source post-init source if exists
 if [ -f ${CONTAINER_SCRIPTS_PATH}/post-init.sh ]; then
