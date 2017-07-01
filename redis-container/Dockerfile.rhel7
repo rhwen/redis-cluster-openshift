@@ -53,7 +53,8 @@ RUN yum install -y net-tools iputils ruby rubygems && \
 COPY redis.conf /etc/redis.conf
 COPY run-redis /usr/bin/run-redis
 
-RUN chown -R 777 /etc/ && \
+RUN chmod -R 777 /etc/ && \
+    chmod -R 777 /etc/redis.conf && \
     chown -R redis.0 /etc/redis.conf && \
     chown -R redis.0 /usr/bin/run-redis && \
     yum clean all && rm -rf /etc/yum.repos.d/*
