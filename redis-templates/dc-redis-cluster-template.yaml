@@ -1,3 +1,12 @@
+#
+#  oadm policy add-scc-to-group privileged system:serviceaccounts:redis-cluster
+#  
+# create redis server by command line:
+#  oc process -p REDIS_PORT=9002 -f dc-redis-cluster-template.yaml | oc create -f -
+#
+# delete all by labels:
+#  oc delete all -lapp=redis-32-rhel7-9002 
+#
 kind: Template
 apiVersion: v1
 metadata:
@@ -38,8 +47,9 @@ objects:
           openshift.io/generated-by: OpenShiftWebConsole
       spec:
         volumes:
-          - name: redis-32-rhel7-${REDIS_PORT}-1
-            emptyDir: {}
+          - name: redis-32-rhel7-${REDIS_PORT}-data
+            hostPath:
+              path: /opt/redis-32-rhel7/${REDIS_PORT}-data
         containers:
           - name: redis-32-rhel7-${REDIS_PORT}
             image: >-
@@ -53,20 +63,31 @@ objects:
                 protocol: TCP
             env:
               - name: REDIS_PORT
-                value: "${REDIS_PORT}"
-            resources: {}
+                value: ${REDIS_PORT}
+              - name: REDIS_PASSWORD
+                value: ${REDIS_PASSWORD}
+            resources:
+              limits:
+                memory: ${MEMORY_LIMIT}
             volumeMounts:
-              - name: redis-32-rhel7-${REDIS_PORT}-1
+              - name: redis-32-rhel7-${REDIS_PORT}-data
                 mountPath: /var/lib/redis/data
             livenessProbe:
-              tcpSocket:
-                port: ${{REDIS_PORT}}
+              exec:
+                command:
+                - /bin/sh
+                - -i
+                - -c
+                - test "$(redis-cli -h 127.0.0.1 -a $REDIS_PASSWORD -p $REDIS_PORT ping)" == "PONG"
               initialDelaySeconds: 35
               timeoutSeconds: 3
-              periodSeconds: 10
             readinessProbe:
-              tcpSocket:
-                port: ${{REDIS_PORT}}
+              exec:
+                command:
+                - /bin/sh
+                - -i
+                - -c
+                - test "$(redis-cli -h 127.0.0.1 -a $REDIS_PASSWORD -p $REDIS_PORT ping)" == "PONG"
               initialDelaySeconds: 30
               timeoutSeconds: 5
               periodSeconds: 10
@@ -78,7 +99,18 @@ objects:
         hostNetwork: true
         securityContext: {}
 parameters:
- - name: REDIS_PORT
-   value: "6379"
-   required: true
-   displayName: "Redis Port"
+- description: Port for Redis Server, default is 6379.
+  displayName: Redis Port
+  name: REDIS_PORT
+  value: "6379"
+  required: true
+- description: Password for the Redis connection user.
+  displayName: Redis Connection Password
+  name: REDIS_PASSWORD
+  value: "welcome1"
+  required: true
+- description: Maximum amount of memory the container can use.
+  displayName: Memory Limit
+  name: MEMORY_LIMIT
+  required: true
+  value: 512Mi
