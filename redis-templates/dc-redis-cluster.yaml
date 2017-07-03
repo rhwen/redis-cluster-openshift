@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: redis-32-rhel7-9002
+  namespace: redis-cluster
+  selfLink: /oapi/v1/namespaces/redis-cluster/deploymentconfigs/redis-32-rhel7-9002
+  creationTimestamp: null
+  labels:
+    app: redis-32-rhel7-9002
+  annotations:
+    openshift.io/generated-by: OpenShiftWebConsole
+spec:
+  strategy:
+    type: Recreate
+    recreateParams:
+      timeoutSeconds: 600
+    resources: {}
+    activeDeadlineSeconds: 21600
+  triggers:
+    - type: ConfigChange
+  replicas: 1
+  test: false
+  selector:
+    app: redis-32-rhel7-9002
+    deploymentconfig: redis-32-rhel7-9002
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: redis-32-rhel7-9002
+        deploymentconfig: redis-32-rhel7-9002
+      annotations:
+        openshift.io/generated-by: OpenShiftWebConsole
+    spec:
+      volumes:
+        - name: redis-32-rhel7-9002-1
+          emptyDir: {}
+      containers:
+        - name: redis-32-rhel7-9002
+          image: >-
+            ewang81/redis-32-rhel7@sha256:8a3f5d0bfa3b27cfdafee1517fb8861dec3e973ed5fe3df60ec9f62768b05a93
+          ports:
+            - hostPort: 9002
+              containerPort: 9002
+              protocol: TCP
+            - hostPort: 19002
+              containerPort: 19002
+              protocol: TCP
+          env:
+            - name: REDIS_PORT
+              value: '9002'
+          resources: {}
+          volumeMounts:
+            - name: redis-32-rhel7-9002-1
+              mountPath: /var/lib/redis/data
+          terminationMessagePath: /dev/termination-log
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      hostNetwork: true
+      securityContext: {}
