@@ -58,6 +58,18 @@ objects:
             volumeMounts:
               - name: redis-32-rhel7-${REDIS_PORT}-1
                 mountPath: /var/lib/redis/data
+            livenessProbe:
+              tcpSocket:
+                port: ${{REDIS_PORT}}
+              initialDelaySeconds: 35
+              timeoutSeconds: 3
+              periodSeconds: 10
+            readinessProbe:
+              tcpSocket:
+                port: ${{REDIS_PORT}}
+              initialDelaySeconds: 30
+              timeoutSeconds: 5
+              periodSeconds: 10
             terminationMessagePath: /dev/termination-log
             imagePullPolicy: Always
         restartPolicy: Always
