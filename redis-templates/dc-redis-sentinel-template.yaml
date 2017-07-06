@@ -1,0 +1,130 @@
+#
+#  oadm policy add-scc-to-group privileged system:serviceaccounts:redis-sentinel
+#  
+# create redis server by command line:
+#  oc process -p REDIS_PORT=8001 -p REDIS_DATABASE_NAME=redisserver11 -p REDIS_NODE_LABEL=redisserver11 -f dc-redis-master-template.yaml |oc create -f -
+#
+# delete all by labels:
+#  oc delete all -lapp=redis-32-rhel7-redisserver11 
+#
+kind: Template
+apiVersion: v1
+metadata:
+  name: redis-sentinel-template
+objects:
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: redis-32-rhel7-${REDIS_DATABASE_NAME}
+    namespace: redis-sentinel
+    selfLink: /oapi/v1/namespaces/redis-sentinel/deploymentconfigs/redis-32-rhel7-${REDIS_DATABASE_NAME}
+    creationTimestamp: null
+    labels:
+      app: redis-32-rhel7-${REDIS_DATABASE_NAME}
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+  spec:
+    strategy:
+      type: Recreate
+      recreateParams:
+        timeoutSeconds: 600
+      resources: {}
+      activeDeadlineSeconds: 21600
+    triggers:
+      - type: ConfigChange
+    replicas: 1
+    test: false
+    selector:
+      app: redis-32-rhel7-${REDIS_DATABASE_NAME}
+      deploymentconfig: redis-32-rhel7-${REDIS_DATABASE_NAME}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: redis-32-rhel7-${REDIS_DATABASE_NAME}
+          deploymentconfig: redis-32-rhel7-${REDIS_DATABASE_NAME}
+        annotations:
+          openshift.io/generated-by: OpenShiftWebConsole
+      spec:
+        volumes:
+          - name: redis-32-rhel7-data
+            hostPath:
+              path: /opt/redis-32-rhel7/${REDIS_PORT}-data
+          - name: redis-32-rhel7-config
+            hostPath:
+              path: /opt/redis-32-rhel7/${REDIS_PORT}-config
+        containers:
+          - name: redis-32-rhel7-${REDIS_DATABASE_NAME}
+            image: registry.access.redhat.com/rhscl/redis-32-rhel7
+            command: ["/bin/sh", "-c", "/opt/rh/rh-redis32/root/usr/bin/redis-sentinel /etc/redis-sentinel/sentinel.conf --port $REDIS_PORT --protected-mode no"]
+            ports:
+              - hostPort: ${REDIS_PORT}
+                containerPort: ${REDIS_PORT}
+                protocol: TCP
+            env:
+              - name: REDIS_PORT
+                value: ${REDIS_PORT}
+              - name: REDIS_PASSWORD
+                value: ${REDIS_PASSWORD}
+            resources:
+              limits:
+                memory: ${MEMORY_LIMIT}
+            volumeMounts:
+              - name: redis-32-rhel7-data
+                mountPath: /var/lib/redis/data
+              - name: redis-32-rhel7-config
+                mountPath: /etc/redis-sentinel
+            livenessProbe:
+              exec:
+                command:
+                - /bin/sh
+                - -i
+                - -c
+                - test "$(redis-cli -h 127.0.0.1 -a $REDIS_PASSWORD -p $REDIS_PORT ping)" == "PONG"
+              initialDelaySeconds: 15
+              timeoutSeconds: 3
+            readinessProbe:
+              exec:
+                command:
+                - /bin/sh
+                - -i
+                - -c
+                - test "$(redis-cli -h 127.0.0.1 -a $REDIS_PASSWORD -p $REDIS_PORT ping)" == "PONG"
+              initialDelaySeconds: 10
+              timeoutSeconds: 5
+              periodSeconds: 10
+            terminationMessagePath: /dev/termination-log
+            imagePullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirst
+        nodeSelector:
+          ${REDIS_NODE_LABEL}: 'true'
+        hostNetwork: true
+        securityContext: {}
+parameters:
+- description: Port for Redis Server, default is 6379.
+  displayName: Redis Port
+  name: REDIS_PORT
+  value: "6379"
+  required: true
+- description: Password for the Redis connection user.
+  displayName: Redis Connection Password
+  name: REDIS_PASSWORD
+  value: "welcome1"
+  required: true
+- description: Maximum amount of memory the container can use.
+  displayName: Memory Limit
+  name: MEMORY_LIMIT
+  required: true
+  value: 64Mi
+- description: The name of redis server.
+  displayName: Redis Database Name
+  name: REDIS_DATABASE_NAME
+  required: true
+  value: ""
+- description: The label on openshift node the container will be deployed.
+  displayName: Redis Node Label
+  name: REDIS_NODE_LABEL
+  required: true
+  value: ""
