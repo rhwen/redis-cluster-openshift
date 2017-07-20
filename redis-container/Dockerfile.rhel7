@@ -11,7 +11,7 @@ FROM registry.access.redhat.com/rhscl/redis-32-rhel7
 # Configration file copy to /etc/redis.conf, the parameters as below: 
 #    daemonize yes
 #    cluster-enabled yes
-#    cluster-config-file nodes-6379.conf
+#    cluster-config-file nodes-${REDIS_PORT}.conf
 #    cluster-node-timeout 15000
 #    appendonly yes
 #
@@ -26,29 +26,16 @@ FROM registry.access.redhat.com/rhscl/redis-32-rhel7
 #  redis-cli -c -h 192.168.65.2 -p 9001
 #
 # Create Redis Cluster:
-#   /usr/src/redis-3.2.4/src/redis-trib.rb create --replicas 1 192.168.65.2:9001 192.168.65.2:9002 192.168.65.2:9003 192.168.65.2:9004 192.168.65.2:9005 192.168.65.2:9006
+#   cluster meet
 #
 
 EXPOSE 6379
 EXPOSE 16379
 
+ENV REDIS_PASSWORD=welcome1
 ENV REDIS_PORT=6379
 
 USER root
-
-# Add local repo offline
-COPY local.repo /etc/yum.repos.d/
-
-# download redis source code and copy into container.
-# http://download.redis.io/releases/redis-3.2.4.tar.gz
-
-COPY redis-3.2.4.tar.gz /tmp
-
-RUN cd /usr/src/ && tar zxvf /tmp/redis-3.2.4.tar.gz 
-
-RUN yum install -y net-tools iputils ruby rubygems && \
-    gem install redis -v 3.3.3
-
 
 COPY redis.conf /etc/redis.conf
 COPY run-redis /usr/bin/run-redis
@@ -56,8 +43,6 @@ COPY run-redis /usr/bin/run-redis
 RUN chmod -R 777 /etc/ && \
     chmod -R 777 /etc/redis.conf && \
     chown -R redis.0 /etc/redis.conf && \
-    chown -R redis.0 /usr/bin/run-redis && \
-    yum clean all && rm -rf /etc/yum.repos.d/*
-
+    chown -R redis.0 /usr/bin/run-redis 
 
 USER 1001

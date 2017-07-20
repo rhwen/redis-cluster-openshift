@@ -2,10 +2,10 @@
 #  oadm policy add-scc-to-group privileged system:serviceaccounts:redis-cluster
 #  
 # create redis server by command line:
-#  oc process -p REDIS_PORT=9012 -p REDIS_DATABASE_NAME=rediscluster11 -p REDIS_NODE_LABEL=rediscluster11 -f dc-redis-cluster-template.yaml |oc create -f -
+#  oc process -p REDIS_PORT=9002 -f dc-redis-cluster-template.yaml | oc create -f -
 #
 # delete all by labels:
-#  oc delete all -lapp=redis-32-rhel7-rediscluster11 
+#  oc delete all -lapp=redis-32-rhel7-9002 
 #
 kind: Template
 apiVersion: v1
@@ -15,12 +15,12 @@ objects:
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
-    name: redis-32-rhel7-${REDIS_DATABASE_NAME}
+    name: redis-32-rhel7-${REDIS_PORT}
     namespace: redis-cluster
-    selfLink: /oapi/v1/namespaces/redis-cluster/deploymentconfigs/redis-32-rhel7-${REDIS_DATABASE_NAME}
+    selfLink: /oapi/v1/namespaces/redis-cluster/deploymentconfigs/redis-32-rhel7-${REDIS_PORT}
     creationTimestamp: null
     labels:
-      app: redis-32-rhel7-${REDIS_DATABASE_NAME}
+      app: redis-32-rhel7-${REDIS_PORT}
     annotations:
       openshift.io/generated-by: OpenShiftWebConsole
   spec:
@@ -35,25 +35,25 @@ objects:
     replicas: 1
     test: false
     selector:
-      app: redis-32-rhel7-${REDIS_DATABASE_NAME}
-      deploymentconfig: redis-32-rhel7-${REDIS_DATABASE_NAME}
+      app: redis-32-rhel7-${REDIS_PORT}
+      deploymentconfig: redis-32-rhel7-${REDIS_PORT}
     template:
       metadata:
         creationTimestamp: null
         labels:
-          app: redis-32-rhel7-${REDIS_DATABASE_NAME}
-          deploymentconfig: redis-32-rhel7-${REDIS_DATABASE_NAME}
+          app: redis-32-rhel7-${REDIS_PORT}
+          deploymentconfig: redis-32-rhel7-${REDIS_PORT}
         annotations:
           openshift.io/generated-by: OpenShiftWebConsole
       spec:
         volumes:
-          - name: redis-32-rhel7-data
+          - name: redis-32-rhel7-${REDIS_PORT}-data
             hostPath:
               path: /opt/redis-32-rhel7/${REDIS_PORT}-data
         containers:
-          - name: redis-32-rhel7-${REDIS_DATABASE_NAME}
-            image: registry.access.redhat.com/rhscl/redis-32-rhel7
-            command: ["/bin/sh", "-c", "run-redis --port $REDIS_PORT --protected-mode no --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 15000 --appendonly yes --masterauth $REDIS_PASSWORD"]
+          - name: redis-32-rhel7-${REDIS_PORT}
+            image: >-
+              ewang81/redis-32-rhel7@sha256:8a3f5d0bfa3b27cfdafee1517fb8861dec3e973ed5fe3df60ec9f62768b05a93
             ports:
               - hostPort: ${REDIS_PORT}
                 containerPort: ${REDIS_PORT}
@@ -70,7 +70,7 @@ objects:
               limits:
                 memory: ${MEMORY_LIMIT}
             volumeMounts:
-              - name: redis-32-rhel7-data
+              - name: redis-32-rhel7-${REDIS_PORT}-data
                 mountPath: /var/lib/redis/data
             livenessProbe:
               exec:
@@ -79,7 +79,7 @@ objects:
                 - -i
                 - -c
                 - test "$(redis-cli -h 127.0.0.1 -a $REDIS_PASSWORD -p $REDIS_PORT ping)" == "PONG"
-              initialDelaySeconds: 15
+              initialDelaySeconds: 35
               timeoutSeconds: 3
             readinessProbe:
               exec:
@@ -88,7 +88,7 @@ objects:
                 - -i
                 - -c
                 - test "$(redis-cli -h 127.0.0.1 -a $REDIS_PASSWORD -p $REDIS_PORT ping)" == "PONG"
-              initialDelaySeconds: 10
+              initialDelaySeconds: 30
               timeoutSeconds: 5
               periodSeconds: 10
             terminationMessagePath: /dev/termination-log
@@ -97,7 +97,7 @@ objects:
         terminationGracePeriodSeconds: 30
         dnsPolicy: ClusterFirst
         nodeSelector:
-          ${REDIS_NODE_LABEL}: 'true'
+          ${REDIS_DATABASE_NAME}: 'true'
         hostNetwork: true
         securityContext: {}
 parameters:
@@ -116,13 +116,8 @@ parameters:
   name: MEMORY_LIMIT
   required: true
   value: 64Mi
-- description: The name of redis server.
+- description: The name of redis server, that also as a label on openshift node the container will be deployed.
   displayName: Redis Database Name
   name: REDIS_DATABASE_NAME
-  required: true
-  value: ""
-- description: The label on openshift node the container will be deployed.
-  displayName: Redis Node Label
-  name: REDIS_NODE_LABEL
   required: true
   value: ""
