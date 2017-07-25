@@ -28,7 +28,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.redhat.sample.redis.App</mainClass>
+                  <mainClass>com.redhat.sample.redis.App2</mainClass>
                 </transformer>
               </transformers>
             </configuration>
